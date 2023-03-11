@@ -1,4 +1,4 @@
-id,study,day,month,year,doi,sample_id,study_id,age,pfem,blinding,whole_night,closed_loop,word_count,semantic,so_power,methodological_deviations_from_ngo2013,n,eff_n,Msham,Mstim,SDsham,SDstim,r,stanyer_smd,wunderlin_smd,note
+id,study,day,month,year,doi,sample_id,study_id,age,pfem,blinding,whole_night,closed_loop,word_count,semantic,so_power,methodological_deviations_from_ngo2013,n,eff_n,Msham,Mstim,SDsham,SDstim,r,d_stanyer,d_wunderlin,note
 1,Ngo et al.,11,4,2013,https://doi.org/10.1016/j.neuron.2013.03.006,1,1,24.2,0.727,Single,1,1,120,1,2.7236,NA,11,11,13,22.18,8.22523,7.52874,0.7,3.68,1.07,NA
 2,Ngo et al.,29,4,2015,https://dx.doi.org/10.1523%2FJNEUROSCI.3133-14.2015,2,2,23.8,0.444,Single,1,1,120,1,1.2009,0,18,18,20.25,24.625,5.8935,6.94622,0.42,2.66,0.64,NA
 3,Ong et al.,11,3,2016,https://doi.org/10.1016/j.sleep.2015.10.016,4,3,22,0.438,Single,0,1,40,1,1.03,2,16,16,-1.72,0,4.16,3.76,NA,0.98,0.41,NA
