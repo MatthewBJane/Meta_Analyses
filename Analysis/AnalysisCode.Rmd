@@ -5,7 +5,8 @@ date: "2023-03-10"
 output: html_document
 ---
 
-### Decline Effect: Set Up
+# Effect Sizes and Decline Effect
+### Set Up
 
 Load in database from github
 
@@ -25,7 +26,7 @@ urlfile="https://raw.githubusercontent.com/MatthewBJane/MetaAnalysis_AcousticSti
 df <- read_csv(url(urlfile))
 
 ```
-# Effect Sizes and Decline Effect
+
 ### Calculate publication date
 
 To calculate publication date, we used the year, month, and day of when the study was published online. Then we scale the publication date so that 0 indicates the date of the first publication.
