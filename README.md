@@ -2,4 +2,4 @@
 
 This repository contains the code and data for the meta-analysis of acoustic stimulation on slow wave sleep (Harlow et al., 2023 [in press])
 
-For Rmarkdown of all analyses, see: https://MatthewBJane.github.io/MatthewBJane/MetaAnalysis_AcousticStimulation/Analysis/AnalysisCode.html
+For Rmarkdown of all analyses, see: https://matthewbjane.github.io/MetaAnalysis_AcousticStimulation/Analysis/AnalysisCode.html
