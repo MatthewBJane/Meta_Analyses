@@ -1,6 +1,6 @@
-# Repository of Meta-Analytic Projects Data and Code
+#  Data and Code for Meta-Analysis Projects
 
-This repository contains the code and data for the meta-analytic projects by Matthew B Jané
+This repository contains the code and data for all meta-analytic projects by Matthew B Jané
 
 Directory for Rmarkdown Documents
 ---
