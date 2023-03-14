@@ -1,5 +1,10 @@
-# Memory Retention following Acoustic Stimulation in Slow-Wave Sleep: A Meta-Analytic Review of Replicability and Measurement Quality
+# Repository of Meta-Analytic Projects Data and Code
 
-This repository contains the code and data for the meta-analysis of acoustic stimulation on slow wave sleep (Harlow et al., 2023 [in press])
+This repository contains the code and data for the meta-analytic projects by Matthew B Jané
 
-For Rmarkdown of all analyses, see: https://matthewbjane.github.io/MetaAnalysis_AcousticStimulation/Analysis/AnalysisCode.html
+Directory for Rmarkdown Documents
+
+----
+Title: Memory Retention following Acoustic Stimulation in Slow-Wave Sleep: A Meta-Analytic Review of Replicability and Measurement Quality
+Rmarkdown Link: https://matthewbjane.github.io/Meta_Analysis/Acoustic_Stimulation_and_Memory/Analysis/AnalysisCode.html
+----
