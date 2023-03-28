@@ -1,0 +1,344 @@
+---
+title: "Memory Retention following Acoustic Stimulation in Slow-Wave Sleep: A Meta-Analytic Review of Replicability and Measurement Quality"
+author: "Matthew B Jané"
+date: "2023-03-10"
+output: html_document
+---
+
+### Decline Effect: Set Up
+
+Load in database from github
+
+```{r setup,message=FALSE, warning=FALSE}
+library(metafor)
+library(ggplot2)
+library(dplyr)
+library(ggbeeswarm)
+library(readr)
+library(gtable)
+library(grid)
+library(gridExtra)
+library(dplyr)
+
+urlfile="https://raw.githubusercontent.com/MatthewBJane/meta_analyses/main/acoustic_stimulation_and_memory/data/meta_analytic_data.csv"
+
+df <- read_csv(url(urlfile))
+
+```
+# Effect Sizes and Decline Effect
+### Calculate publication date
+
+To calculate publication date, we used the year, month, and day of when the study was published online. Then we scale the publication date so that 0 indicates the date of the first publication.
+
+```{r publication_date}
+
+publication_date = df$year + (df$month)/12 + (df$day/30.437)/12
+publication_date_scaled = publication_date - min(publication_date)
+
+df = cbind(df,publication_date,publication_date_scaled)
+
+```
+
+### Calculating standardized mean differences
+
+Standardized mean differences (SMD) using Glass' formulation are used,
+
+$\frac{M_{\text{stim}}-M_{\text{sham}}}{S_{\text{sham}}}$
+
+This formulation is uses the standard deviation of the control (i.e., SHAM) condition as the standardizer. Variance ratio between STIM and SHAM is also calculated for each study to demonstrate violation of the equal variance assumption.
+
+```{r smd}
+
+n = df$eff_n
+J = 1 - 3/(4*(n-1) - 1) # Hedges' Correction Factor
+
+Mstim = df$Mstim # Mean of STIM condition
+Msham = df$Msham # Mean of SHAM condition
+
+SDstim = df$SDstim # Standard deviation of STIM condition
+SDsham = df$SDsham # Standard deviation of SHAM condition
+
+d = (Mstim - Msham) / SDsham # Standardized Mean difference (Glass' Delta)
+v = 2/n + (d^2) / (2*(n - 1)) # Sampling Variance
+
+d = d*J   # Applying correction factor to SMD
+v = v*J^2 # Standardized Mean difference (Glass' Delta)
+
+VarRatio = (SDstim^2) / (SDsham^2)  # Calculation of variance ratio between STIM and SHAM conditions
+
+df = cbind(df,d,v,VarRatio)
+
+forest(rma(data=df,yi=d,vi=v,method='REML',
+           slab = paste(df$study,' (',df$year,')',sep = '')),
+       alim = c(-2,2),
+       xlim=c(-6,6),
+       xlab = 'Standardized Mean Difference (d)')
+
+```
+
+
+### Replication of Wunderlin et al. (2021)
+
+Replication of the effect sizes reported in Wunderlin and colleague's meta-analysis.
+
+```{r wunderlin_replication, warning=F}
+
+r = df$r # Pearson correlation between stimulation and sham conditions
+Zr = atanh(r) # Fisher's z-transformation of Pearson correlation
+Zv = 1/(n-3)  # Fisher's z sampling variance
+mdlr = rma(yi=Zr,vi=Zv) # Random-effects model of Fisher's z correlations
+av_r = tanh(mdlr$beta) # back-transformed pooled Fisher's z to Pearson r
+r[is.na(r)] = av_r # fill in missing correlations with meta-analytic estimate
+SDdiff = sqrt(SDstim^2 + SDsham^2 - 2*r*SDstim*SDsham)  # Standard deviation of difference
+SDwithin = SDdiff / sqrt(2*(1-r)) # Standard deviation within
+d_rep = (Mstim - Msham) / SDwithin  # Standardized mean difference w/ small sample bias correction (Cohen's d)
+v_rep = ( 1/n + (d_rep^2)/(2*n) ) * 2 * (1 - r) # sampling variance
+d_wunderlin_rep = d_rep * J
+v_wunderlin_rep = v_rep * J^2
+
+df = cbind(df,d_wunderlin_rep)
+
+ggplot(data = df,aes(x=d_wunderlin_rep,y=d_wunderlin))+
+  geom_point(size=3)+
+  geom_abline(slope = 1,intercept = 0)+
+  xlim(-1,2)+
+  ylim(-1,2)+
+  theme_light()+
+  xlab('Reproduced SMD')+
+  ylab('Reported SMD')+
+  ggtitle('Reproducing Wunderlin et al. (2021)')
+
+```
+
+### Replication of Stanyer et al. (2022)
+
+Replication of the effect sizes reported in Stanyer and colleague's meta-analysis.
+
+```{r stanyer_replication, warning=F}
+
+n = df$eff_n
+Mstim = df$Mstim # Mean of STIM condition
+Msham = df$Msham # Mean of SHAM condition
+SDstim = df$SDstim # Standard deviation of STIM condition
+SDsham = df$SDsham # Standard deviation of SHAM condition
+d_rep = (Mstim - Msham) / sqrt((SDsham^2 + SDstim^2)/2) # Standardized Mean difference
+v_rep = (2*n)/(n^2) + (d_rep^2) / (n - 2)
+d_stanyer_rep = d_rep*J
+v_stanyer_rep = v_rep*J^2
+
+df = cbind(df,d_stanyer_rep)
+
+ggplot(data = df,aes(x=d_stanyer_rep,y=d_stanyer))+
+  geom_point(size=3)+
+  geom_abline(slope = 1,intercept = 0)+
+  xlim(-1.2,4)+
+  ylim(-1.2,4)+
+  theme_light()+
+  xlab('Reproduced SMD')+
+  ylab('Reported SMD')+
+  ggtitle('Reproducing Stanyer et al. (2022)')
+
+```
+
+###  Decline Effect: Publication date as a moderator of SMDs
+
+Publication date is assessed as a moderator of the observed SMDs. Scaled model is reported in table  the manuscript
+
+```{r decline_effect}
+
+base_model1 = rma(data=df, yi = d, vi = v, mods = ~  publication_date, method = 'REML', slab = study)
+base_model1_scaled = rma(data=df, yi = d, vi = v, mods = ~  publication_date_scaled, method = 'REML', slab = study)
+
+blinding_color = c()
+blinding_color[df$blinding=='Single'] = 'red'
+blinding_color[df$blinding=='Double'] = 'blue'
+
+regplot(base_model1,
+        ylab = 'Standardized Mean Difference', 
+        xlab = 'Publication Date', 
+        xlim =c(2013,2022),
+        refline = 0,
+        bg = blinding_color)
+
+```
+
+
+###  Decline Effect: Leave-One-Out Cross Validation (LOOCV) to check model robustness
+
+Using LOOCV, we can iteratively leave one effect size out at a time then fit the remaining effect sizes to the above meta-regression model to see if regression parameter estimates are sensitive to individual studies. The regression coefficients (w/ 95% CI) are plotted for each iteration of the LOOCV.
+
+```{r loocv, warning=F}
+
+LOOCV_est = c()
+LOOCV_est_LCI = c()
+LOOCV_est_UCI = c()
+for(i in 1:nrow(df)){
+
+  CVmodel1 = rma(data=df, yi = d, vi = v, mods = ~  publication_date, method = 'REML',subset = !(1:nrow(df) %in% i))
+  LOOCV_est[i] = CVmodel1$beta[2]
+  LOOCV_est_LCI[i] = CVmodel1$ci.lb[2]
+  LOOCV_est_UCI[i] = CVmodel1$ci.ub[2]
+
+}
+
+ggplot(data=NULL,aes(x=LOOCV_est,y=1:nrow(df)))+
+  geom_pointrange(aes(xmin=LOOCV_est_LCI,xmax=LOOCV_est_UCI),lwd=1,size=1)+
+  xlim(-.3,.1) +
+  theme_classic()+
+  geom_vline(xintercept=0,color='grey',lwd=1.5) +
+  xlab('Regression Coefficient')+
+  ylab('Effect Size Removed')
+
+```
+
+### Alternative study-level moderators
+
+Other study-level moderators that may account for this decline effect. Models consist of publication date + one other study-level characteristics.
+
+```{r other_moderators}
+
+# alternative study models
+alt_model2 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + age         , method = 'REML')
+alt_model3 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + pfem        , method = 'REML')
+alt_model4 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + closed_loop , method = 'REML')
+alt_model5 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + word_count  , method = 'REML')
+alt_model6 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + semantic    , method = 'REML')
+alt_model7 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + whole_night , method = 'REML')
+alt_model8 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + so_power    , method = 'REML')
+alt_model9 = rma(data=df, yi = d, vi = v, mods = ~ publication_date_scaled + factor(blinding)    , method = 'REML')
+
+# Table of fit statistics
+model_table = data.frame(
+Models = c('Model 1: Pub. Date Only', 'Model 2:  + Age','Model 3:  + Gender','Model 4:  + Phase Locked','Model 5:  + Word Count','Model 6:  + Semantic Congruence','Model 7:  + Overnight','Model 8:  + SO Power','Model 9:  + Blinding'),
+tau = round(c(sqrt(base_model1_scaled$tau2),sqrt(alt_model2$tau2),sqrt(alt_model3$tau2),sqrt(alt_model4$tau2),sqrt(alt_model5$tau2),sqrt(alt_model6$tau2),sqrt(alt_model7$tau2),sqrt(alt_model8$tau2),sqrt(alt_model9$tau2)),3),
+Qm = round(c(base_model1_scaled$QM,alt_model2$QM,alt_model3$QM,alt_model4$QM,alt_model5$QM,alt_model6$QM,alt_model7$QM,alt_model8$QM,alt_model9$QM),2),
+R2 = round(c(base_model1_scaled$R2,alt_model2$R2,alt_model3$R2,alt_model4$R2,alt_model5$R2,alt_model6$R2,alt_model7$R2,alt_model8$R2,alt_model9$R2),2),
+BIC = round(BIC.rma(base_model1_scaled,alt_model2,alt_model3,alt_model4,alt_model5,alt_model6,alt_model7,alt_model8,alt_model9)[,2],2),
+AIC = round(AIC.rma(base_model1_scaled,alt_model2,alt_model3,alt_model4,alt_model5,alt_model6,alt_model7,alt_model8,alt_model9)[,2],2)
+)
+
+mt <- tableGrob(model_table,theme = ttheme_minimal())
+
+grid.arrange(mt, heights = c(3,1))
+
+```
+
+# Reliability Analysis
+### Set up
+
+Load in raw data from available studies on Github
+
+```{r reliability_setup, warning=F,message=FALSE}
+
+urlfile="https://raw.githubusercontent.com/MatthewBJane/meta_analyses/main/acoustic_stimulation_and_memory/data/individual_person_data.csv"
+
+df_rel <- read_csv(url(urlfile))
+
+```
+
+### Calculation
+
+Calculate correlations between pre and post-sleep scores as well as reliability coefficients for pre-sleep, post-sleep, and difference scores. Reliability of difference scores are calculated with the following equation:
+
+$\rho_d = \frac{\rho_{\text{pre}}+\rho_{\text{post}}-2 r_{\text{pp}}}{2(1-r_{\text{pp}})}$
+
+
+```{r reliability_analysis, warning=F}
+
+# Create data frame of reliability coefficients for each study
+REL = df_rel %>%
+  group_by(study) %>%
+  summarize(n = length(study),
+            rho_pre=round(cor(preSham, preStim),2),
+            rho_post=round(cor(postSham, postStim),2),
+            r_pp=round(cor(preSham, postSham),2),
+            r_ppdel=round(cor(postSham, preStim),2),
+            rho_diff = round((cor(preSham, preStim) + cor(postSham, postStim) - 2*cor(preSham, postStim)) / 2*(1-cor(preSham, postSham)),2),
+            rho_difflib= round((cor(preSham, preStim) + cor(postSham, postStim) - 2*cor(preSham, postStim)) / 2*(1-cor(preStim, postSham)),2),
+            r_diffobs = round(cor(postStim-preStim, postSham-preSham),2)
+            )
+
+# Synthesize reliability coefficients
+reliability = rbind(REL,
+  c("MEAN",
+    sum(REL$n),
+    round(rma(data=REL,ri=rho_pre,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=rho_post,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=r_pp,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=r_ppdel,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=rho_diff,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=rho_difflib,ni=n,measure = 'COR')$beta,2),
+    round(rma(data=REL,ri=r_diffobs,ni=n,measure = 'COR')$beta,2)
+  )
+)
+
+tt <- tableGrob(reliability,theme = ttheme_minimal())
+
+grid.arrange(tt,heights=c(4,1),widths = c(10,1))
+```
+
+
+### Inflation of False Positive Rate with Measurement Error
+
+Calculate the effect of measurement error on false positive rates. Assuming a true effect of $d=0$ and a sample size of $N=15$, effect sizes are simulated. Based on our SMD calculation, measurement error attenuates the SMD by a factor equal to $\sqrt{\rho_d}$, such that,
+
+$d_{obs} = d_{true}\sqrt{\rho_d}$
+
+Consequently the associated standard error is also attenuated by the same factor.
+
+$se_{obs} = se_{true}\sqrt{\rho_d}$
+
+
+
+```{r simulation_false_positives, warning=F}
+
+# Assign parameters (sample size = 20)
+n = 20
+d_true = 0
+se_no_error = sqrt((2*n)/(n^2))
+FD_thresh = 1.96*se_no_error
+rho = seq(.01,.99,length.out= 100)
+
+
+# Calculate false discovery rate as a function of reliability
+FDrate = c()
+for(i in 1:length(rho)){
+
+se_obs = se_no_error/sqrt(rho[i])
+FDrate[i] = 1-pnorm(FD_thresh,mean = 0,sd=se_obs)
+
+}
+
+# Plot false discovery rate as a function of reliability
+ggplot(data=NULL,aes(x=rho,y=FDrate))+
+  geom_line(lwd=1.5,color='gray') +
+  xlab('Reliability ') +
+  ylab('False Positive Rate (2-tailed)') + 
+  theme_classic()
+
+
+```
+
+### Biasing of SMDs when Measurement Error is present
+
+Visualizing the biasing of SMDs when measurement error is present. The biasing of SMD is a function of the true effect size and the reliability of the measure $d_{obs} = d_{true}\sqrt{\rho_d}$. Here we demonstrate the biasing effect of reliability with different true effect sizes
+
+```{r simulation_es_bias, warning=F}
+
+# Define various levels of true SMDs
+rho = rep(seq(0,1,length.out=100),19)
+d_true = c(rep(.1,100),rep(.2,100),rep(.3,100),rep(.4,100),rep(.5,100),rep(.6,100),rep(.7,100),rep(.8,100),rep(.9,100),rep(0,100),
+           rep(-.1,100),rep(-.2,100),rep(-.3,100),rep(-.4,100),rep(-.5,100),rep(-.6,100),rep(-.7,100),rep(-.8,100),rep(-.9,100))
+
+# Calculate observed SMDs as a function of reliability
+d_obs = d_true*sqrt(rho)
+
+# Plot out observed SMDs as a function of reliability
+ggplot(data=NULL,aes(x=rho,y=d_obs,group=d_true,color=d_true))+
+  geom_line(lwd=1.5) +
+  xlab('Reliability') +
+  ylab('Standardized Mean Difference (d)') + 
+  theme_classic()
+
+
+```
