@@ -278,9 +278,9 @@ grid.arrange(tt,heights=c(4,1),widths = c(10,1))
 ```
 
 
-### Inflation of False Positive Rate with Measurement Error
+### Inflation of False Discovery Rate with Measurement Error
 
-Calculate the effect of measurement error on false positive rates. Assuming a true effect of $d=0$ and a sample size of $N=15$, effect sizes are simulated. Based on our SMD calculation, measurement error attenuates the SMD by a factor equal to $\sqrt{\rho_d}$, such that,
+Calculate the effect of measurement error on false discovery rates. Assuming a true effect of $d=0$ and a sample size of $N=15$, effect sizes are simulated. Based on our SMD calculation, measurement error attenuates the SMD by a factor equal to $\sqrt{\rho_d}$, such that,
 
 $d_{obs} = d_{true}\sqrt{\rho_d}$
 
@@ -313,7 +313,7 @@ FDrate[i] = 1-pnorm(FD_thresh,mean = 0,sd=se_obs)
 ggplot(data=NULL,aes(x=rho,y=FDrate))+
   geom_line(lwd=1.5,color='gray') +
   xlab('Reliability ') +
-  ylab('False Positive Rate (2-tailed)') + 
+  ylab('False Discovery Rate (2-tailed)') + 
   theme_classic()
 
 
